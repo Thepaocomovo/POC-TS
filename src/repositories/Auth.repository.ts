@@ -21,4 +21,4 @@ const insertUser = (newUser: NewUserEntity) => {
 export {
     getUserByEmail,
     insertUser
-}
+};

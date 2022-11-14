@@ -8,7 +8,11 @@ type UserEntity = {
 
 type NewUserEntity = Omit<UserEntity, "id" | "createdAt">
 
+type UserSignIn = Omit<UserEntity, "id" | "createdAt" | "name">
+
+
 export {
     UserEntity,
-    NewUserEntity
-}
+    NewUserEntity,
+    UserSignIn
+};
