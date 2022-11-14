@@ -36,15 +36,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import bcrypt from "bcrypt";
 import { STATUS_CODE } from "../enuns/StatusCodes.js";
-import { newUserSchema } from "../schemas/UserSchemas.js";
+import { newUserSchema, SignInSchema } from "../schemas/UserSchemas.js";
 import * as authRepository from "../repositories/Auth.repository.js";
+import jwt from "jsonwebtoken";
 var signUp = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var newUser, error, existentUser;
+    var newUser, existentUser, error, error_1, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                if (!req.body)
-                    return [2 /*return*/, res.status(STATUS_CODE.BAD_REQUEST).send("body is missing")];
                 newUser = req.body;
                 error = newUserSchema.validate(newUser).error;
                 if (error) {
@@ -54,17 +53,71 @@ var signUp = function (req, res) { return __awaiter(void 0, void 0, void 0, func
                 }
                 newUser.email = newUser.email.toLowerCase();
                 newUser.password = bcrypt.hashSync(newUser.password, 10);
-                return [4 /*yield*/, authRepository.getUserByEmail(newUser.email)];
+                _a.label = 1;
             case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, authRepository.getUserByEmail(newUser.email)];
+            case 2:
                 existentUser = _a.sent();
+                return [3 /*break*/, 4];
+            case 3:
+                error_1 = _a.sent();
+                console.log(error_1);
+                return [2 /*return*/, res.sendStatus(STATUS_CODE.INTERNAL_SERVER_ERROR)];
+            case 4:
                 if (existentUser.rowCount > 0) {
                     return [2 /*return*/, res.status(STATUS_CODE.CONFLICT).send("email already registered")];
                 }
+                _a.label = 5;
+            case 5:
+                _a.trys.push([5, 7, , 8]);
                 return [4 /*yield*/, authRepository.insertUser(newUser)];
-            case 2:
+            case 6:
                 _a.sent();
-                return [2 /*return*/, res.sendStatus(STATUS_CODE.CREATED)];
+                return [3 /*break*/, 8];
+            case 7:
+                error_2 = _a.sent();
+                console.log(error_2);
+                return [2 /*return*/, res.sendStatus(STATUS_CODE.INTERNAL_SERVER_ERROR)];
+            case 8: return [2 /*return*/, res.sendStatus(STATUS_CODE.CREATED)];
         }
     });
 }); };
-export { signUp, };
+var signIn = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var user, existentUser, error, error_3, token;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                user = req.body;
+                error = SignInSchema.validate(user).error;
+                if (error) {
+                    return [2 /*return*/, res.status(STATUS_CODE.BAD_REQUEST).send({
+                            message: error.message
+                        })];
+                }
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, authRepository.getUserByEmail(user.email)];
+            case 2:
+                existentUser = _a.sent();
+                return [3 /*break*/, 4];
+            case 3:
+                error_3 = _a.sent();
+                console.log(error_3);
+                return [2 /*return*/, res.sendStatus(STATUS_CODE.INTERNAL_SERVER_ERROR)];
+            case 4:
+                if (existentUser.rowCount === 0) {
+                    return [2 /*return*/, res.status(STATUS_CODE.UNAUTHORIZED).send("wrong email or password")];
+                }
+                return [4 /*yield*/, bcrypt.compare(user.password, existentUser.rows[0].password)];
+            case 5:
+                if (!(_a.sent())) {
+                    return [2 /*return*/, res.status(STATUS_CODE.UNAUTHORIZED).send("wrong email or password")];
+                }
+                token = jwt.sign({ userId: existentUser.rows[0].id }, process.env.TOKEN_SECRET);
+                return [2 /*return*/, res.status(STATUS_CODE.OK).send({ token: token })];
+        }
+    });
+}); };
+export { signUp, signIn, };
